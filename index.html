@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="description" content="工业PID参数整定工具 - 智能计算、专业推荐">
+  
+  <!-- PWA配置 -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <title>PID整定工具</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-dark: #0d47a1;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --danger: #f44336;
+      --info: #2196f3;
+      --light: #e3f2fd;
+      --gray: #f5f7fa;
+      --border: #e0e0e0;
+      --text: #333333;
+      --text-light: #757575;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html {
+      font-size: 16px;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 12px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px 15px;
+      background: linear-gradient(120deg, var(--primary), var(--primary-dark));
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      line-height: 1.3;
+    }
+    
+    .subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.4;
+    }
+    
+    .input-section {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 18px;
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .section-title i {
+      margin-right: 10px;
+      font-size: 1.1rem;
+    }
+    
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    .input-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      font-size: 0.95rem;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s;
+      background-color: #fff;
+      color: var(--text);
+      -webkit-appearance: none;
+      min-height: 50px;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+    }
+    
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 12px;
+      padding-right: 40px;
+    }
+    
+    .btn {
+      background: linear-gradient(to right, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      padding: 16px 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      min-height: 54px;
+      margin-top: 10px;
+    }
+    
+    .btn:active {
+      background: linear-gradient(to right, #0d47a1, #0a2f6d);
+      transform: scale(0.98);
+    }
+    
+    .results-section {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    
+    .result-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .result-card.recommended {
+      border: 2px solid var(--success);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+    }
+    
+    .recommended-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(135deg, var(--success), #2e7d32);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      z-index: 10;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .card-header {
+      padding: 16px;
+      background: linear-gradient(to right, var(--primary), var(--primary-dark));
+      color: white;
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .card-content {
+      padding: 18px;
+    }
+    
+    .param-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed var(--border);
+    }
+    
+    .param-label {
+      font-weight: 600;
+      color: var(--primary-dark);
+      min-width: 100px;
+      font-size: 0.95rem;
+    }
+    
+    .param-value {
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 1rem;
+      text-align: right;
+    }
+    
+    .pb-assessment {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    
+    .pb-optimal {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .pb-acceptable {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    
+    .pb-high {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .info-note {
+      background: var(--info);
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    .info-note i {
+      margin-right: 8px;
+    }
+    
+    .system-analysis {
+      background: #fff3e0;
+      border-left: 4px solid var(--warning);
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 20px;
+      border: 1px solid #ffe0b2;
+    }
+    
+    .system-analysis h3 {
+      color: var(--warning);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+    }
+    
+    .system-details {
+      margin-top: 8px;
+    }
+    
+    .system-detail {
+      margin-bottom: 6px;
+      padding-left: 18px;
+      position: relative;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    .system-detail:before {
+      content: "•";
+      position: absolute;
+      left: 5px;
+      color: var(--warning);
+      font-weight: bold;
+    }
+    
+    .recommendation-details {
+      background: #e8f5e9;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      border-left: 4px solid var(--success);
+      font-size: 0.9rem;
+    }
+    
+    .recommendation-details strong {
+      color: var(--success);
+    }
+    
+    .process-type {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    .process-type i {
+      color: var(--primary);
+    }
+    
+    .process-type-label {
+      font-weight: 600;
+    }
+    
+    .unit-note {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 4px;
+      font-style: italic;
+      line-height: 1.3;
+    }
+    
+    .param-range {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-top: 3px;
+      font-style: italic;
+      line-height: 1.3;
+    }
+    
+    .usage-guide {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 20px;
+      border: 1px solid #ffe082;
+    }
+    
+    .usage-guide h3 {
+      color: var(--warning);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+    }
+    
+    .usage-guide ul {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+    
+    .usage-guide li {
+      margin-bottom: 8px;
+      line-height: 1.4;
+      font-size: 0.9rem;
+    }
+    
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      header {
+        padding: 18px 12px;
+        margin-bottom: 15px;
+      }
+      
+      h1 {
+        font-size: 1.4rem;
+      }
+      
+      .input-section, .results-section {
+        padding: 16px;
+        margin-bottom: 15px;
+      }
+    }
+    
+    /* PWA安装提示 */
+    .install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      padding: 16px;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid var(--primary);
+    }
+    
+    .install-prompt h3 {
+      color: var(--primary);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    .install-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .install-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .install-btn.secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+    
+    .close-install {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #666;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-cogs"></i> PID参数整定工具</h1>
+      <p class="subtitle">工业PID参数计算 · 移动端优化 · 智能推荐</p>
+    </header>
+
+    <section class="input-section">
+      <div class="section-title">
+        <i class="fas fa-sliders-h"></i>
+        <span>系统参数输入</span>
+      </div>
+      
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="processType">控制对象类型</label>
+          <select id="processType" class="form-control">
+            <option value="temperature">温度系统</option>
+            <option value="pressure">压力系统</option>
+            <option value="level">液位系统</option>
+          </select>
+          <div class="param-range">典型时间：温度60-600s，压力5-30s，液位10-120s</div>
+        </div>
+        
+        <div class="input-group">
+          <label for="K">过程增益 K</label>
+          <input type="number" id="K" step="0.01" value="1.0" min="0.01" inputmode="decimal">
+          <div class="param-range">输出变化量/输入变化量（无量纲）</div>
+        </div>
+        
+        <div class="input-group">
+          <label for="T">时间常数 T (秒)</label>
+          <input type="number" id="T" step="0.1" value="120" min="0.1" inputmode="decimal">
+          <div class="param-range">达到63.2%稳态值所需时间</div>
+        </div>
+        
+        <div class="input-group">
+          <label for="tau">滞后时间 τ (秒)</label>
+          <input type="number" id="tau" step="0.1" value="30" min="0.0" inputmode="decimal">
+          <div class="param-range">纯滞后时间（无响应时间）</div>
+        </div>
+      </div>
+      
+      <button id="calculateBtn" class="btn">
+        <i class="fas fa-calculator"></i> 计算PID参数
+      </button>
+      
+      <div class="process-type">
+        <i class="fas fa-lightbulb"></i>
+        <span class="process-type-label">当前: <strong id="currentProcess">温度系统</strong></span>
+      </div>
+      
+      <div class="info-note">
+        <i class="fas fa-info-circle"></i>
+        <strong>说明：</strong>比例带(P)单位%，积分(I)和微分(D)单位秒。液位系统自动禁用微分。
+      </div>
+    </section>
+
+    <section class="results-section">
+      <div class="section-title">
+        <i class="fas fa-chart-line"></i>
+        <span>PID参数计算结果</span>
+      </div>
+      
+      <div class="results-grid" id="resultsContainer">
+        <!-- 结果卡片将动态生成 -->
+      </div>
+      
+      <div class="system-analysis" id="systemAnalysis">
+        <h3><i class="fas fa-chart-bar"></i> 系统分析与推荐</h3>
+        <div class="system-details" id="analysisDetails">
+          <!-- 系统分析内容将动态生成 -->
+        </div>
+      </div>
+      
+      <div class="usage-guide">
+        <h3><i class="fas fa-book"></i> 使用方法</h3>
+        <ul>
+          <li><strong>温度系统</strong>：对超调敏感，推荐CHR或IMC-PID</li>
+          <li><strong>压力系统</strong>：追求快速响应，推荐简化IMC</li>
+          <li><strong>液位系统</strong>：通常禁用微分作用（D=0）</li>
+          <li>所有结果需在现场根据实际响应进行微调</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+  
+  <!-- PWA安装提示 -->
+  <div class="install-prompt" id="installPrompt">
+    <button class="close-install" id="closeInstall">×</button>
+    <h3><i class="fas fa-download"></i> 安装PID整定工具</h3>
+    <p>安装到手机桌面，像原生应用一样使用</p>
+    <div class="install-buttons">
+      <button class="install-btn" id="installBtn">立即安装</button>
+      <button class="install-btn secondary" id="laterBtn">稍后提醒</button>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const calculateBtn = document.getElementById('calculateBtn');
+      const resultsContainer = document.getElementById('resultsContainer');
+      const processTypeSelect = document.getElementById('processType');
+      const currentProcess = document.getElementById('currentProcess');
+      const analysisDetails = document.getElementById('analysisDetails');
+      
+      // 更新当前系统类型显示
+      processTypeSelect.addEventListener('change', () => {
+        const selectedText = processTypeSelect.options[processTypeSelect.selectedIndex].text;
+        currentProcess.textContent = selectedText;
+      });
+      
+      // 输入变化时自动重新计算
+      document.querySelectorAll('input, select').forEach(element => {
+        element.addEventListener('input', calculateAllPID);
+      });
+      
+      // 按钮点击计算
+      calculateBtn.addEventListener('click', calculateAllPID);
+      
+      // 初始计算
+      calculateAllPID();
+      
+      // 比例带评估函数
+      function assessProportionalBand(PB, processType) {
+        let assessment = '';
+        let assessmentClass = '';
+        
+        let optimalMin, optimalMax, acceptableMax;
+        
+        switch(processType) {
+          case 'temperature':
+            optimalMin = 50;
+            optimalMax = 150;
+            acceptableMax = 250;
+            break;
+          case 'pressure':
+            optimalMin = 20;
+            optimalMax = 100;
+            acceptableMax = 150;
+            break;
+          case 'level':
+            optimalMin = 30;
+            optimalMax = 120;
+            acceptableMax = 200;
+            break;
+          default:
+            optimalMin = 30;
+            optimalMax = 150;
+            acceptableMax = 250;
+        }
+        
+        if (PB >= optimalMin && PB <= optimalMax) {
+          assessment = '最优';
+          assessmentClass = 'pb-optimal';
+        } else if (PB > optimalMax && PB <= acceptableMax) {
+          assessment = '可接受';
+          assessmentClass = 'pb-acceptable';
+        } else {
+          assessment = '偏高';
+          assessmentClass = 'pb-high';
+        }
+        
+        return { assessment, assessmentClass };
+      }
+      
+      // 智能推荐算法
+      function getRecommendedMethod(K, T, tau, processType, ratio) {
+        let recommendedMethod = '';
+        let reason = '';
+        let methodId = '';
+        
+        switch(processType) {
+          case 'temperature':
+            if (ratio > 0.5) {
+              recommendedMethod = 'CHR 0%超调';
+              methodId = 'chr';
+              reason = `τ/T = ${ratio.toFixed(2)} > 0.5，滞后严重。CHR方法专为无超调设计，温度控制稳定性最高`;
+            } else if (ratio > 0.2) {
+              recommendedMethod = 'Cohen-Coon (经典)';
+              methodId = 'cohen-coon';
+              reason = `τ/T = ${ratio.toFixed(2)} ∈ (0.2, 0.5]，中等滞后。Cohen-Coon方法针对一阶加滞后系统效果良好`;
+            } else {
+              recommendedMethod = 'IMC-PID';
+              methodId = 'imc';
+              reason = `τ/T = ${ratio.toFixed(2)} ≤ 0.2，滞后较小。IMC-PID方法鲁棒性好，适合精确控制`;
+            }
+            break;
+            
+          case 'pressure':
+            if (tau < 5 && T < 30) {
+              recommendedMethod = '简化IMC公式';
+              methodId = 'simplified';
+              reason = `τ = ${tau}秒 < 5秒，T = ${T}秒 < 30秒，快速响应系统。简化IMC公式响应迅速`;
+            } else if (ratio < 0.1) {
+              recommendedMethod = 'IMC-PID';
+              methodId = 'imc';
+              reason = `τ/T = ${ratio.toFixed(2)} < 0.1，滞后极小。IMC-PID性能优异`;
+            } else {
+              recommendedMethod = 'Ziegler-Nichols';
+              methodId = 'zn';
+              reason = `压力系统通用推荐。Z-N方法平衡了响应速度和稳定性`;
+            }
+            break;
+            
+          case 'level':
+            if (ratio > 0.3) {
+              recommendedMethod = 'CHR 0%超调';
+              methodId = 'chr';
+              reason = `τ/T = ${ratio.toFixed(2)} > 0.3，滞后明显。CHR方法适合液位控制，自动禁用微分`;
+            } else {
+              recommendedMethod = '简化IMC公式';
+              methodId = 'simplified';
+              reason = `液位系统通用推荐。简化IMC公式稳定性好，自动禁用微分`;
+            }
+            break;
+        }
+        
+        return { recommendedMethod, reason, methodId };
+      }
+      
+      // 计算单个方法的参数
+      function calculateMethodParams(methodId, K, T, tau, ratio, isLevel) {
+        let PB, Ti, Td;
+        
+        switch(methodId) {
+          case 'cohen-coon':
+            PB = (100 / K) * (0.9 * ratio + 0.25) / (1.33 * ratio + 0.25);
+            Ti = (3.33 * ratio + 0.35 * Math.pow(ratio, 2)) * T;
+            Td = 0.5 * ratio * T;
+            break;
+            
+          case 'chr':
+            PB = (100 / K) * (1.2 * ratio + 0.45);
+            Ti = 2 * tau;
+            Td = 0.5 * tau;
+            break;
+            
+          case 'simplified':
+            PB = (100 / K) * (0.5 + 1.5 * ratio);
+            Ti = 3 * tau + T;
+            Td = 0.4 * tau;
+            break;
+            
+          case 'imc':
+            PB = (100 / K) * (1 + ratio);
+            Ti = T + tau;
+            Td = tau;
+            break;
+            
+          case 'zn':
+            PB = (100 / K) * (1.2 + 0.5 * ratio);
+            Ti = 2 * T;
+            Td = 0.5 * T;
+            break;
+        }
+        
+        // 液位系统禁用微分
+        if (isLevel) {
+          Td = 0;
+        }
+        
+        // 确保参数在合理范围内
+        PB = Math.max(10, Math.min(500, PB));
+        Ti = Math.max(1, Math.min(600, Ti));
+        Td = Math.max(0, Math.min(120, Td));
+        
+        return {
+          PB: parseFloat(PB.toFixed(2)),
+          Ti: parseFloat(Ti.toFixed(2)),
+          Td: parseFloat(Td.toFixed(2))
+        };
+      }
+      
+      function calculateAllPID() {
+        const K = parseFloat(document.getElementById('K').value);
+        const T = parseFloat(document.getElementById('T').value);
+        const tau = parseFloat(document.getElementById('tau').value);
+        const processType = document.getElementById('processType').value;
+        
+        // 验证输入
+        if (isNaN(K) || isNaN(T) || isNaN(tau) || K <= 0 || T <= 0 || tau < 0) {
+          alert('请输入有效参数：K和T需为正数，τ为非负数');
+          return;
+        }
+        
+        const ratio = tau / T;
+        const isLevel = processType === 'level';
+        
+        // 清空结果容器
+        resultsContainer.innerHTML = '';
+        analysisDetails.innerHTML = '';
+        
+        // 获取智能推荐
+        const { recommendedMethod, reason, methodId } = getRecommendedMethod(K, T, tau, processType, ratio);
+        
+        // 定义所有方法
+        const methods = [
+          { 
+            id: 'cohen-coon',
+            name: 'Cohen-Coon', 
+            method: '经典', 
+            formula: 'PB = (100/K)×(0.9(τ/T)+0.25)/(1.33(τ/T)+0.25)',
+            description: '基于一阶加滞后系统模型'
+          },
+          { 
+            id: 'chr',
+            name: 'CHR 0%超调', 
+            method: 'CHR', 
+            formula: 'PB = (100/K)×(1.2τ/T+0.45)',
+            description: '专为无超调设计'
+          },
+          { 
+            id: 'simplified',
+            name: '简化IMC', 
+            method: 'IMC简化', 
+            formula: 'PB = (100/K)×(0.5+1.5τ/T)',
+            description: '鲁棒性好，工业应用广泛'
+          },
+          { 
+            id: 'imc',
+            name: 'IMC-PID', 
+            method: 'IMC', 
+            formula: 'PB = (100/K)×(1+τ/T)',
+            description: '系统模型准确时性能最优'
+          },
+          { 
+            id: 'zn',
+            name: 'Ziegler-Nichols', 
+            method: 'ZN',
+            formula: 'PB = (100/K)×(1.2+0.5τ/T)',
+            description: '经典方法，通常产生20-25%超调'
+          }
+        ];
+        
+        // 生成结果卡片
+        methods.forEach(method => {
+          const result = calculateMethodParams(method.id, K, T, tau, ratio, isLevel);
+          const isRecommended = method.name === recommendedMethod;
+          
+          // 比例带评估
+          const pbAssessment = assessProportionalBand(result.PB, processType);
+          
+          const card = document.createElement('div');
+          card.className = `result-card ${isRecommended ? 'recommended' : ''}`;
+          
+          // 为推荐方法添加徽章
+          if (isRecommended) {
+            card.innerHTML += `<div class="recommended-badge"><i class="fas fa-star"></i> 推荐</div>`;
+          }
+          
+          // 为液位系统添加特殊标识
+          const isLevelCard = isLevel;
+          
+          card.innerHTML += `
+            <div class="card-header">
+              <span>${method.name}</span>
+              <span class="method-type">${method.method}</span>
+            </div>
+            <div class="card-content">
+              <div class="param-row">
+                <span class="param-label">比例带 P:</span>
+                <div>
+                  <span class="param-value">${result.PB}%</span>
+                  <span class="pb-assessment ${pbAssessment.assessmentClass}">${pbAssessment.assessment}</span>
+                </div>
+              </div>
+              
+              <div class="param-row">
+                <span class="param-label">积分时间 I:</span>
+                <span class="param-value">${result.Ti} 秒</span>
+              </div>
+              
+              <div class="param-row">
+                <span class="param-label">微分时间 D:</span>
+                <span class="param-value">${result.Td} 秒</span>
+              </div>
+              
+              ${isLevelCard ? `
+                <div style="background: #e8f5e9; padding: 8px; border-radius: 5px; margin-top: 10px; font-size: 0.85rem;">
+                  <i class="fas fa-tint"></i> 液位系统：已禁用微分（D=0）
+                </div>
+              ` : ''}
+              
+              ${isRecommended ? `
+                <div style="background: #f1f8e9; padding: 8px; border-radius: 5px; margin-top: 10px; font-size: 0.85rem;">
+                  <i class="fas fa-star"></i> ${method.description}
+                </div>
+              ` : ''}
+            </div>
+          `;
+          
+          resultsContainer.appendChild(card);
+        });
+        
+        // 生成系统分析内容
+        const processTypeName = processType === 'temperature' ? '温度系统' : 
+                               processType === 'pressure' ? '压力系统' : '液位系统';
+        
+        // 计算推荐方法的参数
+        const recommendedResult = calculateMethodParams(methodId, K, T, tau, ratio, isLevel);
+        const pbAssessment = assessProportionalBand(recommendedResult.PB, processType);
+        
+        // 移动端简洁显示
+        analysisDetails.innerHTML = `
+          <div class="system-detail">
+            <strong>系统:</strong> ${processTypeName}，τ/T = ${ratio.toFixed(2)}
+          </div>
+          <div class="system-detail">
+            <strong>滞后:</strong>
+            ${ratio > 0.5 ? '严重' : ratio > 0.2 ? '中等' : '轻微'}
+          </div>
+          <div class="recommendation-details">
+            <strong><i class="fas fa-star"></i> 推荐: ${recommendedMethod}</strong>
+            <div style="margin-top: 8px;">${reason}</div>
+            <div style="margin-top: 10px; background: #c8e6c9; padding: 8px; border-radius: 5px;">
+              <strong>推荐参数:</strong> 
+              P = ${recommendedResult.PB}% <span class="${pbAssessment.assessmentClass}" style="padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">${pbAssessment.assessment}</span>
+              <br>I = ${recommendedResult.Ti}秒
+              <br>D = ${recommendedResult.Td}秒
+            </div>
+          </div>
+        `;
+      }
+      
+      // PWA安装逻辑
+      let deferredPrompt;
+      const installPrompt = document.getElementById('installPrompt');
+      const installBtn = document.getElementById('installBtn');
+      const closeInstall = document.getElementById('closeInstall');
+      const laterBtn = document.getElementById('laterBtn');
+      
+      // 检测是否可安装
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // 延迟显示安装提示（避免干扰首次使用）
+        setTimeout(() => {
+          if (!localStorage.getItem('installDismissed')) {
+            installPrompt.style.display = 'flex';
+          }
+        }, 3000);
+      });
+      
+      // 安装按钮点击
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            console.log('用户接受了安装');
+          }
+          deferredPrompt = null;
+        }
+        installPrompt.style.display = 'none';
+      });
+      
+      // 关闭安装提示
+      closeInstall.addEventListener('click', () => {
+        installPrompt.style.display = 'none';
+        localStorage.setItem('installDismissed', 'true');
+      });
+      
+      laterBtn.addEventListener('click', () => {
+        installPrompt.style.display = 'none';
+      });
+      
+      // 检测是否已安装
+      window.addEventListener('appinstalled', () => {
+        console.log('应用已安装');
+        installPrompt.style.display = 'none';
+      });
+      
+      // 注册Service Worker（离线缓存）
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // 创建一个简单的Service Worker
+          const swContent = `
+            self.addEventListener('install', (event) => {
+              console.log('Service Worker 安装成功');
+            });
+            
+            self.addEventListener('fetch', (event) => {
+              // 基本的网络优先策略
+              event.respondWith(fetch(event.request));
+            });
+          `;
+          
+          // 创建并注册Service Worker
+          const blob = new Blob([swContent], { type: 'application/javascript' });
+          const swURL = URL.createObjectURL(blob);
+          
+          navigator.serviceWorker.register(swURL)
+            .then(registration => {
+              console.log('Service Worker 注册成功:', registration.scope);
+            })
+            .catch(error => {
+              console.log('Service Worker 注册失败:', error);
+            });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
